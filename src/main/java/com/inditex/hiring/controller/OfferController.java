@@ -1,9 +1,11 @@
 package com.inditex.hiring.controller;
 
 import com.inditex.hiring.application.GetAllOffersUseCase;
+import com.inditex.hiring.application.GetOfferByIdUseCase;
 import com.inditex.hiring.controller.dto.Offer;
 import com.inditex.hiring.controller.dto.OfferByPartNumber;
 import com.inditex.hiring.domain.query.GetAllOffersQuery;
+import com.inditex.hiring.domain.query.GetOfferByIdQuery;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 public class OfferController {
 
 	private final GetAllOffersUseCase getAllOffersUseCase;
+	private final GetOfferByIdUseCase getOfferByIdUseCase;
 
 	@RequestMapping(value = "/offer", method = RequestMethod.POST, consumes = "application/json")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -52,12 +55,11 @@ public class OfferController {
 		return this.getAllOffersUseCase.execute(GetAllOffersQuery.builder().build());
 	}
 
-	@RequestMapping(value = "/offer/{id}", method = RequestMethod.GET)
+	@GetMapping(path = "/offer/{offerId}")
 	@ResponseStatus(HttpStatus.OK)
-	public Offer getOfferById(Long offerId) {
+	public Offer getOfferById(@PathVariable @Valid Long offerId) {
 
-		//TODO implement it!.
-		return new Offer();
+		return this.getOfferByIdUseCase.execute(GetOfferByIdQuery.builder().id(offerId).build());
 	}
 
 	@RequestMapping(value = "brand/{brandId}/partnumber/{partnumber}/offer", method = RequestMethod.GET)

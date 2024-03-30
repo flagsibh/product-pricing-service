@@ -7,7 +7,7 @@ import java.util.List;
 
 public class TechnicalException extends BaseException {
 
-    public TechnicalException(String code, String message, List<? extends Error> errors, Throwable cause) {
+    public TechnicalException(int code, String message, List<? extends Error> errors, Throwable cause) {
 
         super(code, message, errors, cause);
     }

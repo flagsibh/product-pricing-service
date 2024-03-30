@@ -1,7 +1,7 @@
 package com.inditex.hiring.domain.query.handler;
 
 import com.inditex.hiring.domain.entity.Offer;
-import com.inditex.hiring.domain.query.GetAllOffersQuery;
+import com.inditex.hiring.domain.query.GetOfferByIdQuery;
 import com.inditex.hiring.domain.repository.OfferRepository;
 import com.inditex.hiring.domain.shared.exception.model.Error;
 import com.inditex.hiring.domain.shared.query.QueryFailure;
@@ -14,28 +14,36 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Slf4j
 @Component
 @Transactional
 @RequiredArgsConstructor
-public class GetAllOffersQueryHandler implements QueryHandler<GetAllOffersQuery, List<Offer>> {
+public class GetOfferByIdQueryHandler implements QueryHandler<GetOfferByIdQuery, Offer> {
 
 	private final OfferRepository repository;
 
 	@Override
-	public Either<QueryFailure, List<Offer>> handle(GetAllOffersQuery query) {
+	public Either<QueryFailure, Offer> handle(GetOfferByIdQuery query) {
 
-		return Try.of(repository::findAll)
+		return Try.of(() -> repository.findById(query.getId()))
 		          .fold(throwable -> {
-			          log.error("Error getting offers", throwable);
+			          log.error("Error getting offer by id {}", query.getId(), throwable);
 			          return Either.left(QueryFailure.builder().code(HttpStatus.INTERNAL_SERVER_ERROR.value())
 			                                         .error(Error.builder()
 			                                                     .code(HttpStatus.INTERNAL_SERVER_ERROR.toString())
 			                                                     .message(throwable.getMessage())
 			                                                     .build())
 			                                         .build());
-		          }, Either::right);
+		          }, offer -> offer.map(Either::<QueryFailure, Offer>right)
+		                           .orElseGet(() -> {
+			                           log.error("Offer with id {} not found", query.getId());
+			                           return Either.left(
+					                           QueryFailure.builder().code(HttpStatus.NOT_FOUND.value())
+					                                       .error(Error.builder()
+					                                                   .code(HttpStatus.NOT_FOUND.toString())
+					                                                   .message("Offer not found")
+					                                                   .build())
+					                                       .build());
+		                           }));
 	}
 }

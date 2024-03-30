@@ -19,7 +19,7 @@ public class OfferRepositoryImpl implements OfferRepository {
 	@Override
 	public Optional<Offer> findById(Long id) {
 
-		return Optional.empty();
+		return repository.findById(id).map(mapper::map);
 	}
 
 	@Override

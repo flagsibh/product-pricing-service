@@ -9,18 +9,18 @@ import java.util.List;
 @Getter
 public abstract class BaseException extends RuntimeException {
 
-    protected final String code;
-    protected final transient List<? extends Error> errors;
+	protected final int code;
+	protected final transient List<? extends Error> errors;
 
-    protected BaseException(String code, String message, List<? extends Error> errors, Throwable cause) {
+	protected BaseException(int code, String message, List<? extends Error> errors, Throwable cause) {
 
-        super(message, cause);
-        this.code = code;
-        this.errors = errors;
-    }
+		super(message, cause);
+		this.code = code;
+		this.errors = errors;
+	}
 
-    protected BaseException(Failure failure) {
+	protected BaseException(Failure failure) {
 
-        this(failure.getCode(), failure.getCode(), failure.getErrors(), null);
-    }
+		this(failure.getCode(), String.valueOf(failure.getCode()), failure.getErrors(), null);
+	}
 }

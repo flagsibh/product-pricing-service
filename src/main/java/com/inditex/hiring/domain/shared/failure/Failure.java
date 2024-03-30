@@ -13,7 +13,7 @@ import java.util.List;
 @SuperBuilder
 public class Failure {
     
-    final String code;
+    final int code;
     @Singular
     final List<Error> errors;
     @Singular

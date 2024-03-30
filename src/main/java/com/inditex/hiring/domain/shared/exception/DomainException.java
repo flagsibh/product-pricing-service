@@ -7,7 +7,7 @@ import java.util.List;
 
 public class DomainException extends BaseException {
 
-    public DomainException(String code, String message, List<? extends Error> errors, Throwable cause) {
+    public DomainException(int code, String message, List<? extends Error> errors, Throwable cause) {
 
         super(code, message, errors, cause);
     }
