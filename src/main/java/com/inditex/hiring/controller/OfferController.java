@@ -1,9 +1,11 @@
 package com.inditex.hiring.controller;
 
+import com.inditex.hiring.application.DeleteOfferByIdUseCase;
 import com.inditex.hiring.application.GetAllOffersUseCase;
 import com.inditex.hiring.application.GetOfferByIdUseCase;
 import com.inditex.hiring.controller.dto.Offer;
 import com.inditex.hiring.controller.dto.OfferByPartNumber;
+import com.inditex.hiring.domain.command.DeleteOfferByIdCommand;
 import com.inditex.hiring.domain.query.GetAllOffersQuery;
 import com.inditex.hiring.domain.query.GetOfferByIdQuery;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ public class OfferController {
 
 	private final GetAllOffersUseCase getAllOffersUseCase;
 	private final GetOfferByIdUseCase getOfferByIdUseCase;
+	private final DeleteOfferByIdUseCase deleteOfferByIdUseCase;
 
 	@RequestMapping(value = "/offer", method = RequestMethod.POST, consumes = "application/json")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -40,12 +43,11 @@ public class OfferController {
 
 	}
 
-	@RequestMapping(value = "/offer/{id}", method = RequestMethod.DELETE)
+	@DeleteMapping(path = "/offer/{id}")
 	@ResponseStatus(HttpStatus.OK)
-	public void deleteOfferById(@RequestParam Long id) {
+	public void deleteOfferById(@PathVariable @Valid Long id) {
 
-		//TODO implement it!.
-
+		this.deleteOfferByIdUseCase.execute(DeleteOfferByIdCommand.builder().id(id).build());
 	}
 
 	@GetMapping(path = "/offer")
