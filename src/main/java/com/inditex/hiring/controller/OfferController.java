@@ -1,10 +1,12 @@
 package com.inditex.hiring.controller;
 
+import com.inditex.hiring.application.DeleteAllOffersUseCase;
 import com.inditex.hiring.application.DeleteOfferByIdUseCase;
 import com.inditex.hiring.application.GetAllOffersUseCase;
 import com.inditex.hiring.application.GetOfferByIdUseCase;
 import com.inditex.hiring.controller.dto.Offer;
 import com.inditex.hiring.controller.dto.OfferByPartNumber;
+import com.inditex.hiring.domain.command.DeleteAllOffersCommand;
 import com.inditex.hiring.domain.command.DeleteOfferByIdCommand;
 import com.inditex.hiring.domain.query.GetAllOffersQuery;
 import com.inditex.hiring.domain.query.GetOfferByIdQuery;
@@ -26,6 +28,7 @@ public class OfferController {
 	private final GetAllOffersUseCase getAllOffersUseCase;
 	private final GetOfferByIdUseCase getOfferByIdUseCase;
 	private final DeleteOfferByIdUseCase deleteOfferByIdUseCase;
+	private final DeleteAllOffersUseCase deleteAllOffersUseCase;
 
 	@RequestMapping(value = "/offer", method = RequestMethod.POST, consumes = "application/json")
 	@ResponseStatus(HttpStatus.CREATED)
@@ -35,11 +38,11 @@ public class OfferController {
 
 	}
 
-	@RequestMapping(value = "/offer", method = RequestMethod.DELETE)
+	@DeleteMapping(path = "/offer")
 	@ResponseStatus(HttpStatus.OK)
 	public void deleteAllOffers() {
 
-		//TODO implement it!.
+		this.deleteAllOffersUseCase.execute(DeleteAllOffersCommand.builder().build());
 
 	}
 

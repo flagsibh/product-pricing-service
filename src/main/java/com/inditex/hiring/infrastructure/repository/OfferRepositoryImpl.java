@@ -29,16 +29,15 @@ public class OfferRepositoryImpl implements OfferRepository {
 	}
 
 	@Override
-	public boolean deleteById(Long id) {
+	public void deleteById(Long id) {
 
 		repository.deleteById(id);
-		return true;
 	}
 
 	@Override
-	public boolean deleteAll() {
+	public void deleteAll() {
 
-		return false;
+		repository.deleteAll();
 	}
 
 	@Override

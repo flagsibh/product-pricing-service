@@ -7,13 +7,13 @@ import java.util.Optional;
 
 public interface OfferRepository {
 
-    Optional<Offer> findById(Long id);
+	Optional<Offer> findById(Long id);
 
-    List<Offer> findAll();
+	List<Offer> findAll();
 
-    boolean deleteById(final Long id);
+	void deleteById(final Long id);
 
-    boolean deleteAll();
+	void deleteAll();
 
-    Offer create(final Offer offer);
+	Offer create(final Offer offer);
 }

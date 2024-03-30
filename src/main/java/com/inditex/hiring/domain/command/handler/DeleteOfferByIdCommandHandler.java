@@ -33,6 +33,7 @@ public class DeleteOfferByIdCommandHandler implements CommandHandler<DeleteOffer
 				}).getOrElseGet(throwable -> {
 					log.error("Error deleting offer by id", throwable);
 					return Either.left(CommandFailure.builder()
+					                                 .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
 					                                 .error(Error.builder()
 					                                             .code(HttpStatus.INTERNAL_SERVER_ERROR.toString())
 					                                             .message(throwable.getMessage())
