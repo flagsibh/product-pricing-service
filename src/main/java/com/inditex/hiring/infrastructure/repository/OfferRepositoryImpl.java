@@ -43,6 +43,6 @@ public class OfferRepositoryImpl implements OfferRepository {
 	@Override
 	public Offer create(Offer offer) {
 
-		return null;
+		return mapper.map(repository.save(mapper.map(offer)));
 	}
 }

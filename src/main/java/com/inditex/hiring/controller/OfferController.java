@@ -1,9 +1,7 @@
 package com.inditex.hiring.controller;
 
-import com.inditex.hiring.application.DeleteAllOffersUseCase;
-import com.inditex.hiring.application.DeleteOfferByIdUseCase;
-import com.inditex.hiring.application.GetAllOffersUseCase;
-import com.inditex.hiring.application.GetOfferByIdUseCase;
+import com.inditex.hiring.application.*;
+import com.inditex.hiring.application.mapper.OfferDtoMapper;
 import com.inditex.hiring.controller.dto.Offer;
 import com.inditex.hiring.controller.dto.OfferByPartNumber;
 import com.inditex.hiring.domain.command.DeleteAllOffersCommand;
@@ -18,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 /**
  * You can change this controller but please do not change ends points signatures & payloads.
  */
@@ -29,13 +29,14 @@ public class OfferController {
 	private final GetOfferByIdUseCase getOfferByIdUseCase;
 	private final DeleteOfferByIdUseCase deleteOfferByIdUseCase;
 	private final DeleteAllOffersUseCase deleteAllOffersUseCase;
+	private final CreateOfferUseCase createOfferUseCase;
+	private final OfferDtoMapper mapper;
 
-	@RequestMapping(value = "/offer", method = RequestMethod.POST, consumes = "application/json")
+	@PostMapping(path = "/offer", consumes = APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
 	public void createNewOffer(@RequestBody @Valid Offer offer) {
 
-		//TODO implement it!.
-
+		this.createOfferUseCase.execute(mapper.map(offer));
 	}
 
 	@DeleteMapping(path = "/offer")

@@ -1,0 +1,11 @@
+{
+  "offerId": 5,
+  "brandId": 2,
+  "startDate": "2022-01-01T00.00.00Z",
+  "endDate": "2022-12-31T23.59.59Z",
+  "priceListId": 5,
+  "productPartnumber": "0001003",
+  "priority": 1,
+  "price": 40.00,
+  "currencyIso": "USD"
+}

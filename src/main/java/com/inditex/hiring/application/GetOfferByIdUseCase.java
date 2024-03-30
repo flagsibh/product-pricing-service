@@ -1,6 +1,6 @@
 package com.inditex.hiring.application;
 
-import com.inditex.hiring.application.mapper.OfferMapper;
+import com.inditex.hiring.application.mapper.OfferDtoMapper;
 import com.inditex.hiring.controller.dto.Offer;
 import com.inditex.hiring.domain.query.GetOfferByIdQuery;
 import com.inditex.hiring.domain.query.handler.GetOfferByIdQueryHandler;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetOfferByIdUseCase implements UseCase<GetOfferByIdQuery, Offer> {
 
-	private final OfferMapper mapper;
+	private final OfferDtoMapper mapper;
 
 	private final GetOfferByIdQueryHandler handler;
 

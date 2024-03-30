@@ -18,7 +18,6 @@ import java.time.OffsetDateTime;
 public class OfferJpa {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "OFFER_ID", nullable = false)
 	private Long offerId;
 

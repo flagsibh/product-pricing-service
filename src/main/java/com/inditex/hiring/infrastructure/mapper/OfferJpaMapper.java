@@ -12,4 +12,6 @@ public interface OfferJpaMapper {
 	Offer map(OfferJpa offerJpa);
 
 	List<Offer> map(Iterable<OfferJpa> offers);
+
+	OfferJpa map(Offer offer);
 }
