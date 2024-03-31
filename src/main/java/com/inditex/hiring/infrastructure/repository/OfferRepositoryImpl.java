@@ -45,4 +45,10 @@ public class OfferRepositoryImpl implements OfferRepository {
 
 		return mapper.map(repository.save(mapper.map(offer)));
 	}
+
+	@Override
+	public List<Offer> findByBrandIdAndProductPartnumber(Integer brandId, String partNumber) {
+
+		return mapper.map(repository.findByBrandIdAndProductPartnumber(brandId, partNumber));
+	}
 }

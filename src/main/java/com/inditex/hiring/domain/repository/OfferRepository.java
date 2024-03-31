@@ -16,4 +16,6 @@ public interface OfferRepository {
 	void deleteAll();
 
 	Offer create(final Offer offer);
+
+	List<Offer> findByBrandIdAndProductPartnumber(Integer brandId, String partNumber);
 }

@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface OfferJpaRepository extends CrudRepository<OfferJpa, Long> {
 
+	Iterable<OfferJpa> findByBrandIdAndProductPartnumber(Integer brandId, String partNumber);
 }
