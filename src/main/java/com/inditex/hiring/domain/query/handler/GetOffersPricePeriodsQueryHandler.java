@@ -45,6 +45,15 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 		          }, offers -> Either.right(flattenIntervalsWithPriority(offers)));
 	}
 
+	/**
+	 * This method is responsible for processing the list of offers. It first sorts the offers by start date and
+	 * priority. Then it iterates over the sorted offers and checks for overlaps with existing offers. If an overlap is
+	 * found, the existing offer is split into two, or the new offer is added to the map, depending on the priority of
+	 * the offers and the end date of the new offer.
+	 *
+	 * @param offers The list of offers to process
+	 * @return A list of OfferPeriod with the flattened intervals
+	 */
 	private List<OfferPeriod> flattenIntervalsWithPriority(List<Offer> offers) {
 
 		// Sort the offers by start date and priority
@@ -52,16 +61,20 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 				Comparator.comparing(Offer::getStartDate).thenComparing(Offer::getPriority, Comparator.reverseOrder()));
 
 		// Flatten the intervals
+		// The primary reason for choosing a TreeMap over other data structures is its ability to maintain keys in a sorted order. 
+		// This is particularly useful in this context as the offers need to be processed based on their start dates. 
 		TreeMap<OffsetDateTime, Offer> offerMap = new TreeMap<>();
 		offers.forEach(offer -> {
 			// If there's an existing offer that overlaps with the current offer
+			// The headMap method of TreeMap is used to get a view of the portion of the map whose keys are less than 
+			// the current offer's start date. This is used to check if there's an existing offer that overlaps with the current offer.
 			if (!offerMap.headMap(offer.getStartDate()).isEmpty() &&
 			    offerMap.get(offerMap.headMap(offer.getStartDate()).lastKey())
 			            .getEndDate()
 			            .isAfter(offer.getStartDate())) {
 				Offer existingOffer = offerMap.get(offerMap.headMap(offer.getStartDate()).lastKey());
 
-				// If the existing offer has lower priority or the new offer ends before the existing one, split it into two
+				// If the existing offer has lower priority or ends before the new offer, split the existing offer
 				if (existingOffer.getPriority() < offer.getPriority() ||
 				    offer.getEndDate().isBefore(existingOffer.getEndDate())) {
 					splitExistingOffer(offer, existingOffer, offerMap);
@@ -78,10 +91,11 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 
 	private void splitExistingOffer(Offer offer, Offer existingOffer, TreeMap<OffsetDateTime, Offer> offerMap) {
 
+		// Create a new offer that ends one second before the new offer starts
 		Offer newOffer = existingOffer.toBuilder().endDate(offer.getStartDate().minusSeconds(1)).build();
 		offerMap.put(newOffer.getStartDate(), newOffer);
 
-		// If the existing offer is still valid, add it to the map
+		// If the new offer ends before the existing one, update the existing offer's start date
 		if (offer.getEndDate().isBefore(existingOffer.getEndDate())) {
 			existingOffer.setStartDate(offer.getEndDate());
 			offerMap.put(existingOffer.getStartDate(), existingOffer);
@@ -90,8 +104,10 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 
 	private void addOfferToMap(Offer offer, TreeMap<OffsetDateTime, Offer> offerMap) {
 
+		// If there's no existing offer for the start date or the new offer has higher priority, add it to the map
 		if (!offerMap.containsKey(offer.getStartDate()) ||
 		    offer.getPriority() > offerMap.get(offer.getStartDate()).getPriority()) {
+			// If there's an existing offer after the new offer, set the end date of the new offer to one second before
 			if (offerMap.get(offer.getEndDate()) != null)
 				offer.setEndDate(offer.getEndDate().minusSeconds(1));
 			offerMap.put(offer.getStartDate(), offer);
