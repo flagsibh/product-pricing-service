@@ -17,9 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -42,7 +40,7 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 			                                                     .message(throwable.getMessage())
 			                                                     .build())
 			                                         .build());
-		          }, offers -> Either.right(flattenIntervalsWithPriority(offers)));
+		          }, offers -> Either.right(flattenOffers(offers)));
 	}
 
 	/**
@@ -54,63 +52,124 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 	 * @param offers The list of offers to process
 	 * @return A list of OfferPeriod with the flattened intervals
 	 */
-	private List<OfferPeriod> flattenIntervalsWithPriority(List<Offer> offers) {
+	private List<OfferPeriod> flattenOffers(List<Offer> offers) {
+		// there are five cases to consider:
+		// 1. Left overlap: the new offer starts before the existing offer and ends within the existing offer
+		// 2. Right overlap: the new offer starts within the existing offer's start and end dates and ends after the existing offer
+		// 3. Contained overlap: the new offer starts within the existing offer and ends within the existing offer
+		// 4. Containing overlap: the new offer starts before the existing offer and ends after the existing offer 
+		// 5. No overlap: the new offer starts after the existing offer
+		// All the cases must consider the priority of the offers
 
 		// Sort the offers by start date and priority
-		offers.sort(
-				Comparator.comparing(Offer::getStartDate).thenComparing(Offer::getPriority, Comparator.reverseOrder()));
+		offers.sort(Comparator.comparing(Offer::getStartDate)
+		                      .thenComparing(Offer::getPriority, Comparator.reverseOrder()));
 
-		// Flatten the intervals
-		// The primary reason for choosing a TreeMap over other data structures is its ability to maintain keys in a sorted order. 
-		// This is particularly useful in this context as the offers need to be processed based on their start dates. 
+		// Flattened intervals
+		// The primary reason for choosing a TreeMap over other data structures is its ability to maintain keys in a sorted order.
+		// This is particularly useful in this context as the offers need to be processed based on their start dates.
 		TreeMap<OffsetDateTime, Offer> offerMap = new TreeMap<>();
-		offers.forEach(offer -> {
-			// If there's an existing offer that overlaps with the current offer
-			// The headMap method of TreeMap is used to get a view of the portion of the map whose keys are less than 
-			// the current offer's start date. This is used to check if there's an existing offer that overlaps with the current offer.
-			if (!offerMap.headMap(offer.getStartDate()).isEmpty() &&
-			    offerMap.get(offerMap.headMap(offer.getStartDate()).lastKey())
-			            .getEndDate()
-			            .isAfter(offer.getStartDate())) {
-				Offer existingOffer = offerMap.get(offerMap.headMap(offer.getStartDate()).lastKey());
 
-				// If the existing offer has lower priority or ends before the new offer, split the existing offer
-				if (existingOffer.getPriority() < offer.getPriority() ||
-				    offer.getEndDate().isBefore(existingOffer.getEndDate())) {
-					splitExistingOffer(offer, existingOffer, offerMap);
+		for (Offer offer : offers) {
+			if (!offerMap.isEmpty()) {
+				// The subMap method of TreeMap is used to get a view of the portion of the map whose keys are within the range of the current offer's start and end dates.
+				Map<OffsetDateTime, Offer> subMap =
+						offerMap.subMap(offerMap.firstKey(), true, offer.getEndDate(), true);
+				for (Map.Entry<OffsetDateTime, Offer> entry : new ArrayList<>(subMap.entrySet())) {
+					Offer existingOffer = entry.getValue();
+
+					if (offer.getPriority() >= existingOffer.getPriority()) {
+						if (offer.getStartDate().isBefore(existingOffer.getStartDate()) &&
+						    offer.getEndDate().isBefore(existingOffer.getEndDate()) &&
+						    offer.getEndDate().isAfter(existingOffer.getStartDate())) {
+							// Left overlap
+							Offer newOffer =
+									existingOffer.toBuilder().startDate(offer.getEndDate()).build();
+							offerMap.put(newOffer.getStartDate(), newOffer);
+						} else if (offer.getStartDate().isAfter(existingOffer.getStartDate()) &&
+						           offer.getStartDate().isBefore(existingOffer.getEndDate()) &&
+						           offer.getEndDate().isAfter(existingOffer.getEndDate())) {
+							// Right overlap
+							Offer newOffer =
+									existingOffer.toBuilder().endDate(offer.getStartDate().minusSeconds(1)).build();
+							offerMap.put(newOffer.getStartDate(), newOffer);
+						}
+						// We need to include the case where dates are equal
+						else if ((offer.getStartDate().isAfter(existingOffer.getStartDate()) ||
+						          offer.getStartDate().isEqual(existingOffer.getStartDate())) &&
+						         (offer.getEndDate().isBefore(existingOffer.getEndDate()) ||
+						          offer.getEndDate().isEqual(existingOffer.getEndDate()))) {
+							// Contained overlap
+							Offer newOffer1 =
+									existingOffer.toBuilder().endDate(offer.getStartDate().minusSeconds(1)).build();
+							offerMap.put(newOffer1.getStartDate(), newOffer1);
+							Offer newOffer2 =
+									existingOffer.toBuilder().startDate(offer.getEndDate()).build();
+							if (newOffer2.getStartDate().isBefore(newOffer2.getEndDate()))
+								offerMap.put(newOffer2.getStartDate(), newOffer2);
+						} else if (offer.getStartDate().isBefore(existingOffer.getStartDate()) &&
+						           offer.getEndDate().isAfter(existingOffer.getEndDate())) {
+							// Containing overlap
+							offerMap.remove(existingOffer.getStartDate());
+						}
+					} else {
+						if (offer.getStartDate().isBefore(existingOffer.getStartDate()) &&
+						    offer.getEndDate().isAfter(existingOffer.getEndDate())) {
+							// Containing overlap with lower priority
+							// Add the left edge to the map
+							Offer leftEdge =
+									offer.toBuilder().endDate(existingOffer.getStartDate().minusSeconds(1)).build();
+							offerMap.put(leftEdge.getStartDate(), leftEdge);
+
+							// Add the right edge to the map
+							Offer rightEdge =
+									offer.toBuilder().startDate(existingOffer.getEndDate()).build();
+							offerMap.put(rightEdge.getStartDate(), rightEdge);
+
+							// Check for overlaps again after adding the edges
+							subMap = offerMap.subMap(offerMap.firstKey(), true, offer.getEndDate(), true);
+							for (Map.Entry<OffsetDateTime, Offer> edgeEntry : new ArrayList<>(subMap.entrySet())) {
+								Offer edgeOffer = edgeEntry.getValue();
+
+								// Handle overlaps based on the priority of the offers
+								if (offer.getPriority() > edgeOffer.getPriority()) {
+									offerMap.remove(edgeOffer.getStartDate());
+								}
+							}
+						} else if (offer.getStartDate().isAfter(existingOffer.getStartDate()) &&
+						           offer.getEndDate().isBefore(existingOffer.getEndDate())) {
+							// The current offer is entirely contained within the existing offer with lower priority
+							// Split the existing offer into two
+							Offer leftEdge =
+									existingOffer.toBuilder().endDate(offer.getStartDate().minusSeconds(1)).build();
+							offerMap.put(leftEdge.getStartDate(), leftEdge);
+
+							Offer rightEdge =
+									existingOffer.toBuilder().startDate(offer.getEndDate()).build();
+							offerMap.put(rightEdge.getStartDate(), rightEdge);
+
+							// Add the current offer with the price and priority of the existing offer
+							Offer containedOffer = offer.toBuilder()
+							                            .price(existingOffer.getPrice())
+							                            .priority(existingOffer.getPriority())
+							                            .endDate(offer.getEndDate().minusSeconds(1))
+							                            .build();
+							offerMap.put(containedOffer.getStartDate(), containedOffer);
+						}
+					}
 				}
 			}
 
-			// If the current offer doesn't overlap with an existing offer or has higher priority, add it to the map
-			addOfferToMap(offer, offerMap);
-		});
+			// Check if there is an existing offer with the same start date and if the current offer has a higher priority
+			if (!offerMap.containsKey(offer.getStartDate()) ||
+			    offer.getPriority() > offerMap.get(offer.getStartDate()).getPriority()) {
+				// If there's an existing offer after the new offer, set the end date of the new offer to one second before
+				if (offerMap.get(offer.getEndDate()) != null)
+					offer.setEndDate(offer.getEndDate().minusSeconds(1));
+				offerMap.put(offer.getStartDate(), offer);
+			}
+		}
 
-		// Convert the map to a list of OfferPeriod
 		return offerMap.values().stream().map(mapper::map).toList();
-	}
-
-	private void splitExistingOffer(Offer offer, Offer existingOffer, TreeMap<OffsetDateTime, Offer> offerMap) {
-
-		// Create a new offer that ends one second before the new offer starts
-		Offer newOffer = existingOffer.toBuilder().endDate(offer.getStartDate().minusSeconds(1)).build();
-		offerMap.put(newOffer.getStartDate(), newOffer);
-
-		// If the new offer ends before the existing one, update the existing offer's start date
-		if (offer.getEndDate().isBefore(existingOffer.getEndDate())) {
-			existingOffer.setStartDate(offer.getEndDate());
-			offerMap.put(existingOffer.getStartDate(), existingOffer);
-		}
-	}
-
-	private void addOfferToMap(Offer offer, TreeMap<OffsetDateTime, Offer> offerMap) {
-
-		// If there's no existing offer for the start date or the new offer has higher priority, add it to the map
-		if (!offerMap.containsKey(offer.getStartDate()) ||
-		    offer.getPriority() > offerMap.get(offer.getStartDate()).getPriority()) {
-			// If there's an existing offer after the new offer, set the end date of the new offer to one second before
-			if (offerMap.get(offer.getEndDate()) != null)
-				offer.setEndDate(offer.getEndDate().minusSeconds(1));
-			offerMap.put(offer.getStartDate(), offer);
-		}
 	}
 }
