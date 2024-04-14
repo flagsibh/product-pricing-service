@@ -78,8 +78,10 @@ class GetOffersPricePeriodsUseCaseTest {
 		assertNotNull(offers);
 		assertFalse(offers.isEmpty());
 
+		printOffers(offers);
+		
 		// Validate the values of the offers in the response
-		assertEquals(6, offers.size());
+		assertEquals(7, offers.size());
 		assertEquals("2022-01-01T00:00:00Z", offers.get(0).getStartDate());
 		assertEquals("2022-02-01T14:59:59Z", offers.get(0).getEndDate());
 		assertEquals(0, BigDecimal.valueOf(45.50).compareTo(offers.get(0).getPrice()));
@@ -101,10 +103,8 @@ class GetOffersPricePeriodsUseCaseTest {
 		assertEquals(0, BigDecimal.valueOf(45.50).compareTo(offers.get(4).getPrice()));
 
 		assertEquals("2022-04-01T16:00:00Z", offers.get(5).getStartDate());
-		assertEquals("2022-12-31T23:59:59Z", offers.get(5).getEndDate());
+		assertEquals("2022-06-30T23:59:59Z", offers.get(5).getEndDate());
 		assertEquals(0, BigDecimal.valueOf(48.95).compareTo(offers.get(5).getPrice()));
-
-		printOffers(offers);
 	}
 
 	@Test
@@ -130,6 +130,8 @@ class GetOffersPricePeriodsUseCaseTest {
 		// Validate that the response is not empty
 		assertNotNull(offers);
 		assertFalse(offers.isEmpty());
+		
+		printOffers(offers);
 		
 		// Validate the values of the offers in the response
 		assertEquals(6, offers.size());
@@ -157,12 +159,9 @@ class GetOffersPricePeriodsUseCaseTest {
 		assertEquals("2020-06-15T16:00:00Z", offers.get(5).getStartDate());
 		assertEquals("2020-12-31T23:59:59Z", offers.get(5).getEndDate());
 		assertEquals(0, BigDecimal.valueOf(38.95).compareTo(offers.get(5).getPrice()));
-
-		printOffers(offers);
-
 	}
 
-	private void printOffers(List<OfferByPartNumber> offers) {
+	public void printOffers(List<OfferByPartNumber> offers) {
 
 		offers.forEach(
 				offer -> log.info("startDate: {}, endDate: {}, price: {}",

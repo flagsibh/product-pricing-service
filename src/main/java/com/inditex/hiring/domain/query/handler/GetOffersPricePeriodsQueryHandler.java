@@ -90,9 +90,22 @@ public class GetOffersPricePeriodsQueryHandler implements QueryHandler<GetOffers
 						           offer.getStartDate().isBefore(existingOffer.getEndDate()) &&
 						           offer.getEndDate().isAfter(existingOffer.getEndDate())) {
 							// Right overlap
+							// One approach to handle overlaps is to split the existing offer into two
+							// he first period ends when the new offer starts, and the second period starts when the new offer ends.
 							Offer newOffer =
 									existingOffer.toBuilder().endDate(offer.getStartDate().minusSeconds(1)).build();
 							offerMap.put(newOffer.getStartDate(), newOffer);
+
+							// However, we can create three periods instead of two
+							// Create a new period for the duration of the new offer
+							Offer overlapOffer =
+									offer.toBuilder().endDate(existingOffer.getEndDate()).build();
+							offerMap.put(overlapOffer.getStartDate(), overlapOffer);
+
+							// Create another period that starts when the new offer ends
+							Offer postOverlapOffer =
+									offer.toBuilder().startDate(existingOffer.getEndDate().plusSeconds(1)).build();
+							offerMap.put(postOverlapOffer.getStartDate(), postOverlapOffer);
 						}
 						// We need to include the case where dates are equal
 						else if ((offer.getStartDate().isAfter(existingOffer.getStartDate()) ||
